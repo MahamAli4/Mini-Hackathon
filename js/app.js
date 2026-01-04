@@ -1,6 +1,6 @@
 // Supabase Configuration
 const supabaseUrl = 'https://inobbejethxftzrplmcs.supabase.co';
-const supabaseKey = 'sb_publishable_ZnZB7VuIDg9eKeZyZN-x-A_IhMkQ6AH';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlub2JiZWpldGh4ZnR6cnBsbWNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1MDI1ODAsImV4cCI6MjA4MzA3ODU4MH0.OCOzsimGatNoOpg4cXMH16_kMci6PYSljKF-CR12CCc';
 const { createClient } = supabase;
 const _supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -18,6 +18,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = session.user;
     document.getElementById('userEmailDisplay').innerText = user.email;
     document.getElementById('userName').innerText = user.user_metadata.full_name || 'User';
+
+    // Handle Logout
+    const logoutBtn = document.querySelector('.navbar button[title="Logout"]');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            const { error } = await _supabase.auth.signOut();
+            if (error) {
+                alert('Logout error: ' + error.message);
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+    }
 
     // Fetch and Display Posts
     fetchPosts();
@@ -98,6 +111,9 @@ async function fetchPosts() {
         return;
     }
 
+    // Get current user
+    const { data: { user } } = await _supabase.auth.getUser();
+
     postsGrid.innerHTML = '';
     posts.forEach((post, index) => {
         const date = new Date(post.created_at).toLocaleDateString('en-US', {
@@ -105,6 +121,10 @@ async function fetchPosts() {
         });
 
         const authorInitials = (post.author_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+
+        // Show delete button only if current user is the author
+        const isAuthor = user && user.id === post.author_id;
+        const deleteButton = isAuthor ? `<button class="btn btn-danger btn-sm mt-2 w-100" onclick="deletePost('${post.id}')">Delete Post</button>` : '';
 
         const card = `
             <div class="col-md-6 col-lg-4 animate-fade-in-up" style="animation-delay: ${index * 0.1}s;">
@@ -122,11 +142,31 @@ async function fetchPosts() {
                         </div>
                         <h5 class="post-title">${post.title}</h5>
                         <p class="card-text text-muted small">${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
-                        <button class="btn btn-outline-dark btn-sm w-100 mt-3 rounded-pill" onclick="alert('Full post text: \\n\\n${post.content.replace(/'/g, "\\'")}')">Read More</button>
+                        <button class="btn btn-outline-dark btn-sm w-100 mt-3 rounded-pill" onclick="alert('Full post:\\n\\n${post.content.replace(/'/g, "\\'")}')">Read More</button>
+                        ${deleteButton}
                     </div>
                 </article>
             </div>
         `;
         postsGrid.innerHTML += card;
     });
+}
+
+// Delete Post Function
+async function deletePost(postId) {
+    if (!confirm('Are you sure you want to delete this post?')) {
+        return;
+    }
+
+    const { error } = await _supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId);
+
+    if (error) {
+        alert('Error deleting post: ' + error.message);
+    } else {
+        alert('Post deleted successfully!');
+        fetchPosts(); // Refresh the grid
+    }
 }
