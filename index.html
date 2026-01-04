@@ -22,12 +22,22 @@
                 <i class="bi bi-box-fill"></i> POST App
             </a>
 
-            <div class="d-flex align-items-center gap-3">
-                <span class="d-none d-md-inline text-muted small" id="userEmailDisplay">user@example.com</span>
-                <div class="author-avatar" title="User Profile">DU</div>
-                <button class="btn btn-link text-dark text-decoration-none p-0" title="Logout">
-                    <i class="bi bi-box-arrow-right fs-4"></i>
-                </button>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="homeLink"><i class="bi bi-house-door"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="myPostsLink"><i class="bi bi-journal-text"></i> My Posts</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="d-none d-md-inline text-muted small" id="userEmailDisplay">user@example.com</span>
+                    <div class="author-avatar" title="User Profile" id="userInitialAvatar">DU</div>
+                    <button class="btn btn-link text-dark text-decoration-none p-0" title="Logout" id="logoutBtn">
+                        <i class="bi bi-box-arrow-right fs-4"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -38,8 +48,8 @@
         <!-- Header Section -->
         <div class="d-flex justify-content-between align-items-center mb-5 animate-fade-in-up">
             <div>
-                <h1 class="fw-bold h2 mb-1">Welcome back, <span id="userName">Demo</span>!</h1>
-                <p class="text-muted">Explore the latest blog posts from our community</p>
+                <h1 class="fw-bold h2 mb-1" id="feedTitle">Community Feed</h1>
+                <p class="text-muted" id="feedSubtitle">Explore the latest blog posts from our community</p>
             </div>
             <button class="btn btn-create" data-bs-toggle="modal" data-bs-target="#createPostModal">
                 <i class="bi bi-plus-lg"></i> Create Post
@@ -134,16 +144,17 @@
                     <form id="createPostForm">
                         <div class="mb-3">
                             <label class="form-label fw-medium">Title</label>
-                            <input type="text" class="form-control" placeholder="Enter post title" required>
+                            <input type="text" class="form-control" name="title" placeholder="Enter post title"
+                                required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-medium">Image</label>
-                            <input type="file" class="form-control" accept="image/*" required>
+                            <input type="file" class="form-control" name="image" accept="image/*" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-medium">Content</label>
-                            <textarea class="form-control" rows="4" placeholder="Write your post content..."
-                                required></textarea>
+                            <textarea class="form-control" name="content" rows="4"
+                                placeholder="Write your post content..." required></textarea>
                         </div>
                     </form>
                 </div>
@@ -152,6 +163,46 @@
                         data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" form="createPostForm" class="btn btn-primary rounded-pill px-4">Publish
                         Post</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Post Modal -->
+    <div class="modal fade" id="editPostModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div>
+                        <h5 class="modal-title fw-bold">Edit Post</h5>
+                        <p class="text-muted small mb-0">Update your community story</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="editPostForm">
+                        <input type="hidden" id="editPostId">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Title</label>
+                            <input type="text" id="editPostTitle" class="form-control" placeholder="Enter post title"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Content</label>
+                            <textarea id="editPostContent" class="form-control" rows="4"
+                                placeholder="Write your post content..." required></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-medium small text-muted">Note: Image update is coming
+                                soon</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer p-4 pt-0 border-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="editPostForm" class="btn btn-dark rounded-pill px-4">Save
+                        Changes</button>
                 </div>
             </div>
         </div>
