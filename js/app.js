@@ -67,9 +67,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (createPostForm) {
         createPostForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const submitBtn = createPostForm.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Publishing...';
+            const submitBtn = document.querySelector('button[type="submit"][form="createPostForm"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Publishing...';
+            }
 
             const title = createPostForm.querySelector('input[name="title"]').value;
             const content = createPostForm.querySelector('textarea[name="content"]').value;
@@ -92,17 +94,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                     imageUrl = publicUrl;
                 }
 
+                console.log('Inserting post into DB...');
+                const postData = {
+                    title,
+                    content,
+                    image_url: imageUrl,
+                    author_id: user.id,
+                    author_name: fullName
+                };
+                console.log('Post Data being sent:', postData);
+                console.log('Current Auth UID:', user.id);
+
                 const { error: insertError } = await _supabase
                     .from('posts')
-                    .insert([{
-                        title,
-                        content,
-                        image_url: imageUrl,
-                        author_id: user.id,
-                        author_name: fullName
-                    }]);
+                    .insert([postData]);
 
-                if (insertError) throw insertError;
+                if (insertError) {
+                    console.error('DB Insert Error:', insertError);
+                    throw insertError;
+                }
 
                 alert('Post published successfully!');
                 createPostForm.reset();
@@ -123,9 +133,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (editPostForm) {
         editPostForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const submitBtn = editPostForm.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+            const submitBtn = document.querySelector('button[type="submit"][form="editPostForm"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+            }
 
             const id = document.getElementById('editPostId').value;
             const title = document.getElementById('editPostTitle').value;
@@ -160,7 +172,6 @@ async function fetchPosts() {
 
     postsGrid.innerHTML = '<div class="text-center w-100 py-5"><div class="spinner-border text-primary"></div></div>';
 
-    // Get current user session
     const { data: { session } } = await _supabase.auth.getSession();
     const currentUser = session ? session.user : null;
 
@@ -183,49 +194,115 @@ async function fetchPosts() {
     }
 
     if (!posts || posts.length === 0) {
-        postsGrid.innerHTML = `<div class="text-center w-100 py-5 text-muted">No posts found ${currentView === 'mine' ? 'by you ' : ''}yet.</div>`;
+        if (currentView === 'all') {
+            renderDummyPosts(postsGrid);
+        } else {
+            postsGrid.innerHTML = '<div class="text-center w-100 py-5 text-muted">No posts found by you yet.</div>';
+        }
         return;
     }
 
     postsGrid.innerHTML = '';
     posts.forEach((post, index) => {
+        renderPostCard(postsGrid, post, index, currentUser);
+    });
+}
+
+function renderPostCard(container, post, index, currentUser) {
+    const date = new Date(post.created_at).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+    });
+
+    const authorInitials = (post.author_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+    const isAuthor = currentUser && currentUser.id === post.author_id;
+
+    const authorActions = isAuthor ? `
+        <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-dark btn-sm flex-grow-1" onclick="openEditModal('${post.id}', '${post.title.replace(/'/g, "\\'")}', '${post.content.replace(/'/g, "\\'")}')">Edit</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="deletePost('${post.id}')"><i class="bi bi-trash"></i></button>
+        </div>
+    ` : '';
+
+    const card = `
+        <div class="col-md-6 col-lg-4 animate-fade-in-up" style="animation-delay: ${index * 0.1}s;">
+            <article class="post-card card h-100">
+                <div class="card-img-container">
+                    <img src="${post.image_url || 'https://via.placeholder.com/800x450?text=No+Image'}" class="card-img-top" alt="${post.title}">
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <div class="post-meta">
+                        <span class="author-chip">
+                            <div class="author-avatar">${authorInitials}</div>
+                            By ${post.author_name || 'Anonymous'}
+                        </span>
+                        <span>• ${date}</span>
+                    </div>
+                    <h5 class="post-title">${post.title}</h5>
+                    <p class="card-text text-muted small flex-grow-1">${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
+                    <button class="btn btn-outline-dark btn-sm w-100 mt-3 rounded-pill" onclick="alert('Full post:\\n\\n${post.content.replace(/'/g, "\\'")}')">Read More</button>
+                    ${authorActions}
+                </div>
+            </article>
+        </div>
+    `;
+    container.innerHTML += card;
+}
+
+function renderDummyPosts(container) {
+    const dummyData = [
+        {
+            title: "Exploring the Future of Tech",
+            author_name: "Tech Geek",
+            created_at: new Date().toISOString(),
+            content: "Artificial Intelligence and Machine Learning are reshaping the world as we know it. From automation to creative arts...",
+            image_url: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80"
+        },
+        {
+            title: "The Art of Sustainable Living",
+            author_name: "Eco Warrior",
+            created_at: new Date().toISOString(),
+            content: "Living sustainably is more than just a trend—it's a lifestyle. Discover how small changes can make a big impact on our planet...",
+            image_url: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80"
+        },
+        {
+            title: "Mastering the Craft of Cooking",
+            author_name: "Chef Special",
+            created_at: new Date().toISOString(),
+            content: "Cooking is a journey of flavors. Learn the secret tips from top chefs to elevate your everyday meals to gourmet levels...",
+            image_url: "https://images.unsplash.com/photo-1466637574441-749b8f19452f?auto=format&fit=crop&w=800&q=80"
+        }
+    ];
+
+    container.innerHTML = '';
+    dummyData.forEach((post, index) => {
         const date = new Date(post.created_at).toLocaleDateString('en-US', {
             month: 'short', day: 'numeric', year: 'numeric'
         });
-
-        const authorInitials = (post.author_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-        const isAuthor = currentUser && currentUser.id === post.author_id;
-
-        const authorActions = isAuthor ? `
-            <div class="d-flex gap-2 mt-2">
-                <button class="btn btn-dark btn-sm flex-grow-1" onclick="openEditModal('${post.id}', '${post.title.replace(/'/g, "\\'")}', '${post.content.replace(/'/g, "\\'")}')">Edit</button>
-                <button class="btn btn-outline-danger btn-sm" onclick="deletePost('${post.id}')"><i class="bi bi-trash"></i></button>
-            </div>
-        ` : '';
+        const authorInitials = post.author_name.split(' ').map(n => n[0]).join('').toUpperCase();
 
         const card = `
             <div class="col-md-6 col-lg-4 animate-fade-in-up" style="animation-delay: ${index * 0.1}s;">
-                <article class="post-card card h-100">
+                <article class="post-card card h-100 border-primary shadow-sm">
                     <div class="card-img-container">
-                        <img src="${post.image_url || 'https://via.placeholder.com/800x450?text=No+Image'}" class="card-img-top" alt="${post.title}">
+                        <span class="badge bg-primary position-absolute m-3" style="z-index: 2;">Featured</span>
+                        <img src="${post.image_url}" class="card-img-top" alt="${post.title}">
                     </div>
                     <div class="card-body d-flex flex-column">
                         <div class="post-meta">
                             <span class="author-chip">
                                 <div class="author-avatar">${authorInitials}</div>
-                                By ${post.author_name || 'Anonymous'}
+                                By ${post.author_name}
                             </span>
                             <span>• ${date}</span>
                         </div>
                         <h5 class="post-title">${post.title}</h5>
-                        <p class="card-text text-muted small flex-grow-1">${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
-                        <button class="btn btn-outline-dark btn-sm w-100 mt-3 rounded-pill" onclick="alert('Full post:\\n\\n${post.content.replace(/'/g, "\\'")}')">Read More</button>
-                        ${authorActions}
+                        <p class="card-text text-muted small flex-grow-1">${post.content}</p>
+                        <button class="btn btn-outline-primary btn-sm w-100 mt-3 rounded-pill" onclick="alert('This is a demo post!')">Read More</button>
                     </div>
                 </article>
             </div>
         `;
-        postsGrid.innerHTML += card;
+        container.innerHTML += card;
     });
 }
 
