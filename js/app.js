@@ -210,7 +210,7 @@ async function fetchPosts() {
 
 function renderPostCard(container, post, index, currentUser) {
     const date = new Date(post.created_at).toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric'
+        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
     const authorInitials = (post.author_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
@@ -239,7 +239,7 @@ function renderPostCard(container, post, index, currentUser) {
                     </div>
                     <h5 class="post-title">${post.title}</h5>
                     <p class="card-text text-muted small flex-grow-1">${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
-                    <button class="btn btn-outline-dark btn-sm w-100 mt-3 rounded-pill" onclick="alert('Full post:\\n\\n${post.content.replace(/'/g, "\\'")}')">Read More</button>
+                    <a href="post-detail.html?id=${post.id}" class="btn btn-outline-dark btn-sm w-100 mt-3 rounded-pill">Read More</a>
                     ${authorActions}
                 </div>
             </article>
@@ -276,7 +276,7 @@ function renderDummyPosts(container) {
     container.innerHTML = '';
     dummyData.forEach((post, index) => {
         const date = new Date(post.created_at).toLocaleDateString('en-US', {
-            month: 'short', day: 'numeric', year: 'numeric'
+            month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
         });
         const authorInitials = post.author_name.split(' ').map(n => n[0]).join('').toUpperCase();
 
@@ -297,7 +297,7 @@ function renderDummyPosts(container) {
                         </div>
                         <h5 class="post-title">${post.title}</h5>
                         <p class="card-text text-muted small flex-grow-1">${post.content}</p>
-                        <button class="btn btn-outline-primary btn-sm w-100 mt-3 rounded-pill" onclick="alert('This is a demo post!')">Read More</button>
+                        <a href="post-detail.html?id=demo-${index}" class="btn btn-outline-primary btn-sm w-100 mt-3 rounded-pill">Read More</a>
                     </div>
                 </article>
             </div>
